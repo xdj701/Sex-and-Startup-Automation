@@ -6,20 +6,20 @@ import numpy as np
 OathPattern = r"^(IN WITNESS WHEREOF|I, UNDERSIGNED|THE UNDERSIGNED DECLARES|IT IS HEREBY DECLARED|Executed (on|at))"
 
 ArticleArabicPattern = r"^ARTICLE \d+"
-ArticleRomanPattern = r"^ARTICLE [IVX]+"
-RomanPattern = r"^[IVX]+\.?"
+ArticleRomanPattern = r"^ARTICLE [IVXL]+"
+RomanPattern = r"^[IVXL]+\.?"
 OrdinalPattern = r"^([A-Z]+ST|[A-Z]+ND|[A-Z]+RD|[A-Z]+TH)[:.]"
 CardinalPattern = r"^(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|[A-Z]+TEEN):\s"
 AllowedTopLevelPatterns = [ArticleArabicPattern, ArticleRomanPattern, OrdinalPattern, CardinalPattern]
 
 ParentheseArabicPattern = r"^\(\d+\)\s"
-ParentheseLowercaseRomanPattern = r"^\([ivx]+\)\s"
+ParentheseLowercaseRomanPattern = r"^\([ivxl]+\)\s"
 ParentheseUppercaseLetterPattern = r"^\([A-Z]+\)\s"
 ParentheseLowercaseLetterPattern = r"^\([a-z]+\)\s"
 ArabicPattern = r"^\d+\.?\s"
 SubArabicPattern = r"^\d+\.\d+\.?\s"
 SubSubArabicPattern = r"^\d+\.\d+\.\d+\.?\s"
-UppercaseRomanPattern = r"^[IVX]+\.?\s"
+UppercaseRomanPattern = r"^[IVXL]+\.?\s"
 # Limit to one character to avoid matching with random string
 # {1} can be replaced with + after we finish cleaning up bottom line of docs
 UppercaseLetterPattern = r"^[A-Z]{1}\.?\s"
@@ -90,45 +90,19 @@ def pre_clean(raw_text):
 
     return parsed_text
 
-# @deprecated
-def try_fix_ocr_num_error(text, matched_lv, root_node):
-    
-    parent_node = root_node
-    for i in range(matched_lv):
-        parent_node = parent_node.child_nodes[-1]
-
-    # the first in a series
-    if len(parent_node.child_nodes) == 0:
-        return text
-
-    prev_node = parent_node.child_nodes[-1]
-
-    idx_match_pattern = "^(\d+[\.\s]){1,3}"    
-    prev_match = re.match(idx_match_pattern, prev_node.text)
-    # it is guaranteed to match
-    curr_match = re.match(idx_match_pattern, text)
-
-    if prev_match is not None:
-        prev_idx = int(prev_match.group().replace(".",""))
-        curr_idx = int(curr_match.group().replace(".",""))
-    
-        if curr_idx - prev_idx != 1:
-            if text[1] != ".":
-                text = text[0] + "." + text[1:]
-                print("fix an ocr problem at: " + str(curr_idx))
-
-    return text
-
 # this function only fixs number misreading error (e.g.,  4.4 -> 44 or 4.4.4 -> 44.4)
 def try_simple_ocr_num_fix(text, matched_pattern):
 
     if matched_pattern in [ArabicPattern, SubArabicPattern]:
     # this is super hacky (based on the assumption that only the dot after the first number is missing)
-        if text[1] not in [" ", "."]:
-            fixed_text = text[0] + "." + text[1:]
-            fixed_pattern = SubArabicPattern if matched_pattern == ArabicPattern else SubSubArabicPattern
+        if text[0] != "1" and text[1] not in [" ", "."]:
+            text = text[0] + "." + text[1:]
+            if matched_pattern == ArabicPattern:
+                matched_pattern = SubArabicPattern
+            if matched_pattern = SubArabicPattern and text[3] not in [" ", "."]:
+                text = text[:3] + "." + text[3:]
+                matched_pattern = SubSubArabicPattern
             print("fix an ocr problem at: " + text)
-            return fixed_text, fixed_pattern        
 
     return text, matched_pattern
 
@@ -141,8 +115,7 @@ def match_top_level_patterns(text, top_level_match_results, root_node):
         top_level_pattern = root_node.child_nodes[-1].pattern
         if top_level_pattern != OathPattern and top_level_pattern != matched_top_pattern:
             print("Conflicting top level patterns! Current Node: " + text)
-            print("Previous Top-Level Nodes")
-            root_node.display_children()
+            print("Previous Top-Level Node: " + root_node.child_nodes[-1].text)
 
     root_node.adopt_children([Node(matched_top_pattern, text)])
     
