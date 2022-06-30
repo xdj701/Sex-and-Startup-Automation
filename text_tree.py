@@ -2,7 +2,6 @@ import os, sys
 import re, itertools
 import numpy as np
 
-
 OathPattern = r"^(IN WITNESS WHEREOF|I, UNDERSIGNED|THE UNDERSIGNED DECLARES|IT IS HEREBY DECLARED|Executed (on|at))"
 
 ArticleArabicPattern = r"^ARTICLE \d+"
@@ -66,27 +65,13 @@ def find_parent_node(parent_node, matched_level):
 
 # return a list of paragraphs
 def pre_clean(raw_text):
-    # remove everything before RESOLVED
-    # clean_text = raw_text[raw_text.find("RESOLVED"):]
-
     # remove the content between the full restatement and the oath clause
     clean_text = re.sub("\* \* \*.*IN WITNESS WHEREOF", "IN WITNESS WHEREOF", raw_text, 0, re.DOTALL)
-    
-    # remove page number, document id or file path at the end of each page
-    # TODO: this should be replaced by a classifier that removes any line that does not contain any English word
-    # -1-, 2-, -2., -[3-
-    clean_text = re.sub("\n+[\d\.\s\-\[\]]+\n+", "\n\n", clean_text)
-    # OHS West:261083958.8 15
-    clean_text = re.sub("\n+OHS WEST:.*\n", "\n", clean_text, 0, re.IGNORECASE)
-    # 703361733v1, 703361 733v!
-    clean_text = re.sub("\n+[\d\s]+v[\d\!]\n+", " ", clean_text)
-    # GDS VF&H
-    clean_text = re.sub("\n+GDS\s?VF.*\n", "\n", clean_text)
     
     # sometimes the titles are separated by only one newline
     parsed_text = re.sub("\n+(ARTICLE \w+)\n+", lambda o: "\n\n" + o.groups()[0] + "\n\n", clean_text)
     parsed_text = parsed_text.split("\n\n")
-    parsed_text = [line.replace("\n", " ").strip() for line in parsed_text]
+    parsed_text = [paragraph.replace("\n", " ").strip() for paragraph in parsed_text]
 
     return parsed_text
 
@@ -99,7 +84,7 @@ def try_simple_ocr_num_fix(text, matched_pattern):
             text = text[0] + "." + text[1:]
             if matched_pattern == ArabicPattern:
                 matched_pattern = SubArabicPattern
-            if matched_pattern = SubArabicPattern and text[3] not in [" ", "."]:
+            if matched_pattern == SubArabicPattern and text[3] not in [" ", "."]:
                 text = text[:3] + "." + text[3:]
                 matched_pattern = SubSubArabicPattern
             print("fix an ocr problem at: " + text)
