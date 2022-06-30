@@ -3,6 +3,7 @@ import cv2
 import pytesseract
 import re
 from pdf2image import convert_from_path
+from nltk.corpus import words
 
 def erode_and_dilate_image(img):
     np_img = np.array(img) 
@@ -23,10 +24,16 @@ def scan_pdf(pdf_path):
     pdf = convert_from_path(pdf_path)
 
     # return a list of text in each page of the input doc
-    raw_texts = [pytesseract.image_to_string(erode_and_dilate_image(page), lang="eng", config="--psm 3") for page in pdf]
+    pages = [pytesseract.image_to_string(erode_and_dilate_image(page), lang="eng", config="--psm 3") for page in pdf]
+    for i in range(len(pages)):
+        page = pages[i]
+        lines = page.strip("\n").split("\n\n")
+        # check if the last line contains page number, file path, or doc name
+        if not any([token in words.words() for token in lines[-1].split(" ")]):
+            lines.pop()
+            pages[i] = "\n\n".join(lines)
 
-    # TODO: try to remove the page number, doc name, or file path at the bottom of each page
-    text = "\n".join(raw_texts)
+    text = "\n".join(pages)
     
     # Gj) -> (j)
     text = re.sub("G\w\)", lambda o: "(" + o.group()[1:], text)
@@ -65,4 +72,3 @@ def scan_pdf(pdf_path):
         ).replace("(ili)", "(iii)"
         ).replace("shal]", "shall"
         ).replace("&)", "(x)")
-
