@@ -35,22 +35,34 @@ def scan_pdf(pdf_path):
     # 1, -> 1., 3,3.1 -> 3.3.1 This may be too hacky
     text = re.sub("(\n+\d+),(\s|\d+\.)", lambda o: ".".join(o.groups()), text)
 
-    # ARTICLE OI, VOI, VHUI, VU, VIM -> ARTICLE VIII
-    text = re.sub("(ARTICLE [IVX]?)(OI|HUI|U|IM)", lambda o: o.groups()[0] + "III", text)
+    # WHEREOPF, WHEREOEF -> WHEREOF
+    text = re.sub("WHEREO[PE]F", "WHEREOF", text)
+
+    # non-standard quotation marks
+    text = re.sub("[“”‘’]","\"", text)
+
+    # ARTICLE OI, VOI, VHUI, VHI, VU, VIM -> ARTICLE VIII
+    text = re.sub("(ARTICLE [IVX]?)(OI|HU?I|U|IM)", lambda o: o.groups()[0] + "III", text)
     # Il -> II, lI -> II, IlI -> III
     text = re.sub("(ARTICLE [IVX]*)(l+)([IVX]*)", lambda o: o.groups()[0] + "I"*len(o.groups()[1]) + o.groups()[2], text)
+    # IT -> II, IE -> II, XE -> XI
+    text = re.sub("(ARTICLE [IVX]*)[TE]", lambda o: o.groups()[0] + "I", text)
+    # ii -> II, il -> II, ili -> IIi
+    text = re.sub("(ARTICLE [IVX]*)i[il]", lambda o: o.groups()[0] + "II", text)
+    # ii -> II, iI -> II, IIi -> III
+    text = re.sub("(ARTICLE [IVX]*)(i+)", lambda o: o.groups()[0] + "I"*len(o.groups()[1]), text)
+    # iX -> IX, 1X -> IX
+    text = re.sub("ARTICLE [1i]X", "ARTICLE IX", text)
 
     return text.replace("CERTIFICATE ON ORPORATION", "CERTIFICATE OF CORPORATION"
         ).replace("CERTIFICATE  ORPORATION", "CERTIFICATE OF CORPORATION"
-        ).replace("WHEREOPF", "WHEREOF"
-        ).replace("WHEREOEF", "WHEREOF"
+        ).replace("ARTICLE |", "ARTICLE I"
         ).replace("ARTICLE It", "ARTICLE III"
-        ).replace("ARTICLE IIT", "ARTICLE III"
+        ).replace("ARTICLE If", "ARTICLE II"
+        ).replace("ARTICLE hit", "ARTICLE III"
         ).replace("ARTICLE [V", "ARTICLE IV"
+        ).replace("ARTICLE VH", "ARTICLE VII"
         ).replace("(ili)", "(iii)"
         ).replace("shal]", "shall"
-        ).replace("&)", "(x)"
-        ).replace("“", "\""
-        ).replace("”", "\""
-        ).replace("‘", "\""
-        ).replace("’", "\"")
+        ).replace("&)", "(x)")
+
