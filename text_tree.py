@@ -2,13 +2,13 @@ import os, sys
 import re, itertools
 import numpy as np
 
-OathPattern = r"^(IN WITNESS WHEREOF|I, UNDERSIGNED|THE UNDERSIGNED DECLARES|IT IS HEREBY DECLARED|Executed (on|at))"
+OathPattern = r"^(IN WITNESS WHEREOF|I, UNDERSIGNED|THE UNDERSIGNED DECLARES|THE UNDERSIGNED INCORPORATOR|IT IS HEREBY DECLARED|Executed (on|at))"
 
 ArticleArabicPattern = r"^ARTICLE \d+"
 ArticleRomanPattern = r"^ARTICLE [IVXL]+"
 RomanPattern = r"^[IVXL]+\.?"
-OrdinalPattern = r"^([A-Z]+ST|[A-Z]+ND|[A-Z]+RD|[A-Z]+TH)[:.]"
-CardinalPattern = r"^(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|[A-Z]+TEEN):\s"
+OrdinalPattern = r"^([A-Z]+ST|[A-Z]+ND|[A-Z]+RD|[A-Z]+TH)[:\.]"
+CardinalPattern = r"^(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|[A-Z]+TEEN)[:\.]\s"
 AllowedTopLevelPatterns = [ArticleArabicPattern, ArticleRomanPattern, OrdinalPattern, CardinalPattern]
 
 ParentheseArabicPattern = r"^\(\d+\)\s"
@@ -66,11 +66,13 @@ def find_parent_node(parent_node, matched_level):
 # return a list of paragraphs
 def pre_clean(raw_text):
     # remove the content between the full restatement and the oath clause
-    clean_text = re.sub("\* \* \*.*IN WITNESS WHEREOF", "IN WITNESS WHEREOF", raw_text, 0, re.DOTALL)
+    fixed_text = re.sub("\* \* \*.*IN WITNESS WHEREOF", "IN WITNESS WHEREOF", raw_text, 0, re.DOTALL)
     
     # sometimes the titles are separated by only one newline
-    parsed_text = re.sub("\n+(ARTICLE \w+)\n+", lambda o: "\n\n" + o.groups()[0] + "\n\n", clean_text)
-    parsed_text = parsed_text.split("\n\n")
+    fixed_text = re.sub("[\n]{1}(ARTICLE [I1])", lambda o: "\n\n" + o.groups()[0], fixed_text)
+    fixed_text = re.sub("[\n]{1}(FIRST[:\.\s])", lambda o: "\n\n" + o.groups()[0], fixed_text)
+
+    parsed_text = fixed_text.split("\n\n")
     parsed_text = [paragraph.replace("\n", " ").strip() for paragraph in parsed_text]
 
     return parsed_text
