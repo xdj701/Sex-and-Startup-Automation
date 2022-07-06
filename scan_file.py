@@ -9,16 +9,25 @@ from nltk.corpus import words
 def erode_and_dilate_image(img):
     np_img = np.array(img) 
     # Convert RGB to BGR 
-    img = np_img[:, :, ::-1].copy()
+    bgr_img = np_img[:, :, ::-1].copy()
+    #Convert image to grayscale
+    gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
     
     # Use a smaller kernel to look at an adjacent character
     kernel = np.ones((2,1), np.uint8)
 
     # A must step for processing bolded characters
-    eroded_img = cv2.erode(img, kernel, iterations=1)
+    eroded_img = cv2.erode(gray_img, kernel, iterations=1)
     dilated_img = cv2.dilate(eroded_img, kernel, iterations=1)
 
     return dilated_img
+
+def fix_pdf_errors(raw_text):
+    # (a ) -> (a)
+    clean_text = re.sub("\( ?(\w+) ?\)", lambda o: "(" + o.groups()[0] + ")", raw_text)
+    
+    return clean_text.replace("P referred", "Preferred"
+        ).replace("ARTICLEX", "ARTICLE X")
 
 def fix_ocr_errors(raw_text):
     
@@ -28,6 +37,8 @@ def fix_ocr_errors(raw_text):
     text = re.sub("\{\w\)", lambda o: "(" + o.group()[1:], text)
     # 1, -> 1., 3,3.1 -> 3.3.1 This may be too hacky
     text = re.sub("(\n+\d+),(\s|\d+\.)", lambda o: ".".join(o.groups()), text)
+    # Cc. -> C.
+    text = re.sub("^Cc\.", "C.", text)
 
     # WHEREOPF, WHEREOEF -> WHEREOF
     text = re.sub("WHEREO[PE]F", "WHEREOF", text)
@@ -74,17 +85,17 @@ def scan_pdf(file_path):
         page_texts = [page.extract_text(layout=True).strip() for page in pdf.pages]
         # the pdf is machine-generated
         if all(page_texts):
+            print("a machine-generated file")
             clean_texts = []
             for page_text in page_texts:
                 raw_page_text = re.sub("[\n]{2,}", "\n\n", page_text)
                 lines = [re.sub("[\s\n]+", " ", line).strip() for line in raw_page_text.split("\n\n")]
                 clean_texts.append(try_remove_footer(lines))
-            
             full_text = "\n\n".join(clean_texts)
-            full_text = re.sub("\( ?(\w+) ?\)", lambda o: "(" + o.groups()[0] + ")", full_text)
-            return full_text
+            return fix_pdf_errors(full_text)
         # the pdf is a scanned copy, try OCR
         else:
+            print("an OCR-scanned file")
             page_imgs = convert_from_path(file_path)
 
             # return a list of text in each page of the input doc
@@ -95,3 +106,5 @@ def scan_pdf(file_path):
                 raw_texts.append(try_remove_footer(lines))   
             full_text = "\n\n".join(raw_texts)
             return fix_ocr_errors(full_text)
+
+
