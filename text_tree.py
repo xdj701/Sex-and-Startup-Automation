@@ -2,14 +2,14 @@ import os, sys
 import re, itertools
 import numpy as np
 
-OathPattern = r"^(IN WITNESS WHEREOF|I, UNDERSIGNED|THE UNDERSIGNED DECLARES|THE UNDERSIGNED INCORPORATOR|IT IS HEREBY DECLARED|Executed (on|at))"
+OathPattern = r"^(IN WITNESS WHEREOF|I, UNDERSIGNED|THE UNDERSIGNED DECLARES|THE UNDERSIGNED INCORPORATOR|IT IS HEREBY DECLARED|Executed (on|at)|We further certify)"
 
 ArticleArabicPattern = r"^ARTICLE \d+"
 ArticleRomanPattern = r"^ARTICLE [IVXL]+"
 RomanPattern = r"^[IVXL]+\.?"
 OrdinalPattern = r"^([A-Z]+ST|[A-Z]+ND|[A-Z]+RD|[A-Z]+TH)[:\.]"
 CardinalPattern = r"^(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|[A-Z]+TEEN)[:\.]\s"
-AllowedTopLevelPatterns = [ArticleArabicPattern, ArticleRomanPattern, OrdinalPattern, CardinalPattern]
+AllowedTopLevelPatterns = [ArticleArabicPattern, ArticleRomanPattern, RomanPattern, OrdinalPattern, CardinalPattern]
 
 ParentheseArabicPattern = r"^\(\d+\)\s"
 ParentheseLowercaseRomanPattern = r"^\([ivxl]+\)\s"
@@ -69,8 +69,8 @@ def pre_clean(raw_text):
     fixed_text = re.sub("\* \* \*.*IN WITNESS WHEREOF", "IN WITNESS WHEREOF", raw_text, 0, re.DOTALL)
     
     # sometimes the titles are separated by only one newline
-    fixed_text = re.sub("[\n]{1}(ARTICLE [I1])", lambda o: "\n\n" + o.groups()[0], fixed_text)
-    fixed_text = re.sub("[\n]{1}(FIRST[:\.\s])", lambda o: "\n\n" + o.groups()[0], fixed_text)
+    fixed_text = re.sub("\\n{1}(ARTICLE [I1])", lambda o: "\n\n" + o.groups()[0], fixed_text)
+    fixed_text = re.sub("\\n{1}(FIRST[:\.\s])", lambda o: "\n\n" + o.groups()[0], fixed_text)
 
     parsed_text = fixed_text.split("\n\n")
     parsed_text = [paragraph.replace("\n", " ").strip() for paragraph in parsed_text]
@@ -100,9 +100,8 @@ def match_top_level_patterns(text, top_level_match_results, root_node):
     
     if len(root_node.child_nodes) != 0:
         top_level_pattern = root_node.child_nodes[-1].pattern
-        if top_level_pattern != OathPattern and top_level_pattern != matched_top_pattern:
-            print("Conflicting top level patterns! Current Node: " + text)
-            print("Previous Top-Level Node: " + root_node.child_nodes[-1].text)
+        #if top_level_pattern != OathPattern and top_level_pattern != matched_top_pattern:
+            # print("Conflicting top level patterns at: " + text)
 
     root_node.adopt_children([Node(matched_top_pattern, text)])
     
