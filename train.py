@@ -29,6 +29,7 @@ def import_data_from_excel(file_path, sheet_name):
         data[COL_QUESTION] = data.apply(lambda x: x[COL_QUESTION].format(x[COL_SERIES_NAME]), axis=1)
     return data
 
+
 class TorchDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
@@ -71,22 +72,29 @@ def add_token_positions(tokenizer, encodings, answers):
                     end_positions[-1] = encodings.char_to_token(i, answers[i]['answer_end'] - 1) + 1
     encodings.update({'start_positions': start_positions, 'end_positions': end_positions})
     return encodings
+
+
+def transform_classification_data(tokenizer, train_df, val_df, with_context=False):
     
-def transform_classification_data(tokenizer, train_df, val_df):
-    
-    train_encodings = tokenizer(train_df[COL_CONTEXT].tolist(), padding='max_length')
-    val_encodings = tokenizer(val_df[COL_CONTEXT].tolist(),padding='max_length')
+    if with_context:
+        train_encodings = tokenizer(train_df[COL_QUESTION].tolist(), train_df[COL_CONTEXT].tolist(), padding='max_length')
+        val_encodings = tokenizer(val_df[COL_QUESTION].tolist(), val_df[COL_CONTEXT].tolist(), padding='max_length')
+    else:
+        train_encodings = tokenizer(train_df[COL_CONTEXT].tolist(), padding='max_length')
+        val_encodings = tokenizer(val_df[COL_CONTEXT].tolist(), padding='max_length')
+
     train_dataset = TorchDataset(train_encodings, train_df[COL_ANSWER].tolist())
     val_dataset = TorchDataset(val_encodings, val_df[COL_ANSWER].tolist())
 
     return train_dataset, val_dataset
 
-def train_model(model, train_dataset, val_dataset, learning_rate = DEFAULT_LEARNING_RATE, epochs = DEFAULT_NUM_EPOCHS):
+
+def train_model(model, train_dataset, val_dataset, model_type, learning_rate = DEFAULT_LEARNING_RATE, epochs = DEFAULT_NUM_EPOCHS):
 
     timestamp = int(time.time())
 
     training_args = TrainingArguments(
-        output_dir='./qa/{}/models'.format(timestamp),
+        output_dir='./models/{}/{}'.format(model_type, timestamp),
         num_train_epochs=epochs,              # total number of training epochs
         per_device_train_batch_size=5,  # batch size per device during training
         per_device_eval_batch_size=5,   # batch size for evaluation
@@ -95,7 +103,7 @@ def train_model(model, train_dataset, val_dataset, learning_rate = DEFAULT_LEARN
         save_strategy = "epoch",
         load_best_model_at_end = True,
         learning_rate=learning_rate,
-        logging_dir='./qa/{}/logs'.format(timestamp),
+        logging_dir='./logs/{}/{}'.format(model_type, timestamp),
         logging_steps=5,
     )
 
