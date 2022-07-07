@@ -19,11 +19,12 @@ ArabicPattern = r"^\d+\.?\s"
 SubArabicPattern = r"^\d+\.\d+\.?\s"
 SubSubArabicPattern = r"^\d+\.\d+\.\d+\.?\s"
 UppercaseRomanPattern = r"^[IVXL]+\.?\s"
+SectionRomanPattern = r"^Section \d+\.\s"
 # Limit to one character to avoid matching with random string
 # {1} can be replaced with + after we finish cleaning up bottom line of docs
 UppercaseLetterPattern = r"^[A-Z]{1}\.?\s"
 AllowedSubLevelPatterns = [ParentheseArabicPattern, ParentheseLowercaseRomanPattern, ParentheseUppercaseLetterPattern, ParentheseLowercaseLetterPattern, 
-                             ArabicPattern, SubArabicPattern, SubSubArabicPattern, UppercaseRomanPattern, UppercaseLetterPattern]
+                             ArabicPattern, SubArabicPattern, SubSubArabicPattern, UppercaseRomanPattern, UppercaseLetterPattern, SectionRomanPattern]
 
 class Node:
     pattern: str
