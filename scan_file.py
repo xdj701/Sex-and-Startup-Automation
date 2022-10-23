@@ -484,7 +484,7 @@ def scan_pdf(file_path: str) -> str:
             for page_text in page_texts:
                 raw_page_text = re.sub("[\n]{2,}", "\n\n", page_text)
                 lines = [re.sub("[\s\n]+", " ", line).strip() for line in raw_page_text.split("\n\n")]
-                clean_texts.append(try_remove_header_and_footer(lines))
+                clean_texts.append(remove_header_and_footer(lines))
             full_text = "\n\n".join(clean_texts)
             return fix_pdf_errors(full_text)
         # the pdf is a scanned copy, try OCR
@@ -497,6 +497,6 @@ def scan_pdf(file_path: str) -> str:
             raw_texts = []
             for page_text in page_texts:
                 lines = page_text.strip("\n").split("\n\n")
-                raw_texts.append(try_remove_header_and_footer(lines))   
+                raw_texts.append(remove_header_and_footer(lines))   
             full_text = "\n\n".join(raw_texts)
             return fix_ocr_errors(full_text)
