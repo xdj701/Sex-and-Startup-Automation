@@ -124,7 +124,7 @@ def fix_pdf_errors(raw_text: str) -> str:
     # (o r) -> (or), (o ther) -> (other)
     clean_text = re.sub("\(o (\w)", lambda o: "(o" + o.groups()[0], clean_text)
     # SeriesC -> Series, Section1 -> Section 1, Article I -> Article I
-    processed_text = re.sub("(eries|ection|rticle|RTICLE)([0-9A-Z])", lambda o: " ".join(o.groups()), processed_text)
+    clean_text = re.sub("(eries|ection|rticle|RTICLE)([0-9A-Z])", lambda o: " ".join(o.groups()), clean_text)
     
     return clean_text.replace("P referred", "Preferred"
         ).replace("oft he", "of the")
